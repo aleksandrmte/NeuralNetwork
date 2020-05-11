@@ -1,8 +1,11 @@
-﻿using Neural.Core.Functions;
+﻿using System;
+using Neural.Core.Functions;
 using Neural.Core.Layers;
 using Neural.Core.Neurons;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using Neural.Core.Helpers;
 
 namespace Neural.Core
 {
@@ -10,7 +13,6 @@ namespace Neural.Core
     {
         private readonly List<Layer> _layers;
         private readonly double _learningRate;
-        private List<double> _expectedResults;
 
         public NeuralNetwork(double learningRate, IFunction function, params int[] countLayerNeurons)
         {
@@ -33,6 +35,12 @@ namespace Neural.Core
             return GetOutput();
         }
 
+        public void ShowAll()
+        {
+            var lastLayer = _layers.Last();
+            Console.WriteLine(string.Join("; ", lastLayer.Neurons.Select(x => x.Output)));
+        }
+
         private double GetOutput()
         {
             var lastLayer = _layers.Last();
@@ -45,9 +53,9 @@ namespace Neural.Core
             for (var i = 0; i < firstLayer.Neurons.Count; i++)
             {
                 var neuron = firstLayer.Neurons[i];
-                neuron.SetInputs(new List<double> {signals[i]});
+                neuron.SetInputs(new List<double> { signals[i] });
                 neuron.CalculateOutput();
-            }            
+            }
         }
 
         private void SendSignalsToAllLayers()
@@ -64,20 +72,42 @@ namespace Neural.Core
             }
         }
 
-        public void SetExpectedResults(List<double> expectedResults)
-        {
-            _expectedResults = expectedResults;
-        }
-
-        public double Train(int countEpoch, List<List<double>> dataSets)
+        public double Train(double[] expectedResults, double[,] inputs, int countEpoch)
         {
             var error = 0.0;
             for (var i = 0; i < countEpoch; i++)
             {
-                error += dataSets.Select((dataSet, j) => BackPropagation(_expectedResults[j], dataSet)).Sum();
+                for (var j = 0; j < expectedResults.Length; j++)
+                {
+                    var output = expectedResults[j];
+                    var input = ArrayHelper.GetRow(inputs, j);
+                    error += BackPropagation(output, input.ToList());
+                }
             }
             var result = error / countEpoch;
             return result;
+        }
+        
+        public double[,] Scaling(double[,] inputs)
+        {
+            var result = new double[inputs.GetLength(0), inputs.GetLength(1)];
+            for (var column = 0; column < inputs.GetLength(1); column++)
+            {
+                var columnData = ArrayHelper.GetColumn(inputs, column);
+                var min = columnData.OrderBy(x => x).First();
+                var max = columnData.OrderByDescending(x => x).First();
+                ChangeScalingColumnData(result, inputs, column, min, max);
+            }
+            return result;
+        }
+
+        private static void ChangeScalingColumnData(double[,] result, double[,] inputs, int column, double min, double max)
+        {
+            var denominator = max - min;
+            for (var row = 0; row < inputs.GetLength(0); row++)
+            {
+                result[row, column] = (inputs[row, column] - min) / denominator;
+            }
         }
 
         private double BackPropagation(double expectedValue, List<double> inputs)

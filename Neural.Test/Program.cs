@@ -1,7 +1,9 @@
 ﻿using Neural.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neural.Core.Functions;
+using Neural.Core.Helpers;
 
 namespace Neural.Test
 {
@@ -9,53 +11,42 @@ namespace Neural.Test
     {
         private static void Main(string[] args)
         {
-            var network = new NeuralNetwork(0.1, new SigmoidFunction(), 4, 2, 1);
+            var network = new NeuralNetwork(0.1, new SigmoidFunction(), 10, 10, 2);
             
-            //Вы любите горы?
-            //Вы любите путешествовать?
-            //Вы любите города?
-            //Вы любите играть на компьютере?
-            //Вы предпочитаете активный отдых?
-            //Вы любите сидеть дома?
-
-            var expectedResults = new List<double> {  1, 0, 0, 1, 0, 0 };
-
-
-            var dataSets = new List<List<double>>
+            var dataSets = new double[,]
             {
-                new List<double> {1, 1, 1, 0, 1, 0},
-                new List<double> {0, 0, 0, 1, 0, 1},
-                new List<double> {0, 0, 1, 1, 0, 1},
-                new List<double> {1, 1, 0, 0, 1, 0},
-                new List<double> {0, 0, 1, 0, 0, 1},
-                new List<double> {1, 0, 0, 1, 0, 1}
+                {1, 1, 1, 0, 1, 0, 1, 0, 1, 0},
+                {0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
+                {0, 0, 1, 1, 0, 1, 1, 1, 0, 0},
+                {1, 1, 0, 0, 1, 0, 0, 1, 1, 0},
+                {0, 0, 1, 0, 0, 1, 0, 1, 1, 0},
+                {1, 0, 0, 1, 0, 1, 0, 1, 1, 1}
             };
+            var expectedResults = new double[] { 1, 0, 0, 1, 0, 0 };
+            
+            //scaling data [0...1]
+            dataSets = network.Scaling(dataSets);
 
-            network.SetExpectedResults(expectedResults);
-            network.Train(10000, dataSets);
+            network.Train(expectedResults, dataSets, 10000);
 
-            //for (var k = 0; k < 20; k++)
+            //var results = new List<double>();
+            //for (var i = 0; i < expectedResults.Length; i++)
             //{
-            //    var results = new List<double>();
-            //    for (var i = 0; i < expectedResults.Count; i++)
-            //    {
-
-            //        var result = network.Activate(dataSets[i]);
-            //        results.Add(result);
-            //    }
-            //    for (var i = 0; i < results.Count; i++)
-            //    {
-            //        var expected = Math.Round(expectedResults[i], 1);
-            //        var actual = Math.Round(results[i], 1);
-            //        Console.WriteLine($"{expected} - {actual}; {expected == actual}");
-
-            //    }
-            //    Console.WriteLine();
+            //    var input = ArrayHelper.GetRow(dataSets, i).ToList();
+            //    var result = network.Activate(input);
+            //    results.Add(result);
+            //}
+            //for (var i = 0; i < results.Count; i++)
+            //{
+            //    var expected = Math.Round(expectedResults[i], 1);
+            //    var actual = Math.Round(results[i], 1);
+            //    Console.WriteLine($"{expected} = {actual}; {expected == actual}");
             //}
 
-            var inputSignals = new List<double> { 1, 1, 0, 0, 1, 1 };
+            var inputSignals = new List<double> {1, 1, 0, 0, 1, 0, 1, 0, 1, 0};
 
             Console.WriteLine(Math.Round(network.Activate(inputSignals), 6));
+            network.ShowAll();
 
             Console.ReadKey();
         }
