@@ -63,7 +63,7 @@ namespace Neural.Core.Neurons
             BiasDelta = learningRate * Gradient;
             Bias += BiasDelta + momentum * prevDelta;
 
-            Gradient = difference * Function.CalculateDx(Output);
+            Gradient = difference * Function.Derivation(Output);
 
             for (var i = 0; i < Weights.Count; i++)
             {

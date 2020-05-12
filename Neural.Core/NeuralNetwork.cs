@@ -13,10 +13,12 @@ namespace Neural.Core
         private readonly List<Layer> _layers;
         private readonly double _learningRate;
         private double _momentum;
+        public List<double> Errors { get; private set; }
 
         public NeuralNetwork(double learningRate, IFunction function, params int[] countLayerNeurons)
         {
             _layers = new List<Layer>();
+            Errors = new List<double>();
             _learningRate = learningRate;
             _momentum = 0;
             var factory = new LayerFactory();
@@ -77,13 +79,15 @@ namespace Neural.Core
             var error = 0.0;
             for (var i = 0; i < countEpoch; i++)
             {
+                var errorEpoch = 0.0;
                 for (var j = 0; j < expectedResults.GetLength(0); j++)
                 {
                     var output = ArrayHelper.GetRow(expectedResults, j);
                     var input = ArrayHelper.GetRow(inputs, j);
-                    var errorEpoch = BackPropagation(output.ToList(), input.ToList());
-                    error += errorEpoch;
+                    errorEpoch += BackPropagation(output.ToList(), input.ToList());                    
                 }
+                error += errorEpoch;
+                Errors.Add(errorEpoch);
             }
             var result = error / countEpoch;
             return result;

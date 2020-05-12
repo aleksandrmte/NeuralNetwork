@@ -7,6 +7,6 @@ namespace Neural.Core.Functions
     public interface IFunction
     {
         double Calculate(double input);
-        double CalculateDx(double input);
+        double Derivation(double input);
     }
 }

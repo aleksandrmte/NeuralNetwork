@@ -1,20 +1,21 @@
-﻿using Neural.Core.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Neural.Core.Functions
 {
-    public class SigmoidFunction : IFunction
+    public class ThFunction : IFunction
     {
         public double Calculate(double input)
         {
-            return input < -45.0 ? 0.0 : input > 45.0 ? 1.0 : 1.0 / (1.0 + Math.Exp(-input));
+            var x = Math.Pow(Math.E, input);
+            var y = Math.Pow(Math.E, -input);
+            return (x - y) / (x + y);
         }
 
         public double Derivation(double input)
         {
-            return input * (1 - input);
+            return 1 - Math.Pow(input, 2);
         }
     }
 }
