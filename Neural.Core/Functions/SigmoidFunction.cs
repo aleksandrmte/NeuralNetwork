@@ -6,17 +6,21 @@ namespace Neural.Core.Functions
 {
     public class SigmoidFunction : IFunction
     {
-        public double Calculate(double input)
+        public double Calculate(double x)
         {
-            var result = 1.0 / (1.0 + Math.Pow(Math.E, -input));
-            return result;
+            return x < -45.0 ? 0.0 : x > 45.0 ? 1.0 : 1.0 / (1.0 + Math.Exp(-x));
         }
 
-        public double CalculateDx(double input)
+        public double CalculateDx(double sigmoid)
         {
-            var sigmoid = Calculate(input);
-            var result = sigmoid / (1 - sigmoid);
-            return result;
+            return sigmoid * (1 - sigmoid);
         }
+
+        //public double CalculateDx(double input)
+        //{
+        //    var sigmoid = Calculate(input);
+        //    var result = sigmoid / (1 - sigmoid);
+        //    return result;
+        //}
     }
 }

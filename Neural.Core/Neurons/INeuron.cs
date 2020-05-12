@@ -9,9 +9,11 @@ namespace Neural.Core.Neurons
         NeuronType Type { get; set; }
         List<double> Weights { get; set; }
         double Output { get; set; }
-        public double Delta { get; set; }
+        double Bias { get; set; }
+        double BiasDelta { get; set; }
+        double Gradient { get; set; }
         void SetInputs(List<double> inputs);
-        double CalculateOutput();
-        void Learn(double difference, double learningRate);
+        void CalculateOutput();
+        void Learn(double difference, double learningRate, double momentum);
     }
 }

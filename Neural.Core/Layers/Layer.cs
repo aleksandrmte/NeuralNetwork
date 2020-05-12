@@ -1,6 +1,7 @@
 ﻿using Neural.Core.Neurons;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Neural.Core.Layers

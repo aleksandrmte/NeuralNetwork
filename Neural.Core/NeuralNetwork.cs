@@ -1,11 +1,10 @@
-﻿using System;
-using Neural.Core.Functions;
+﻿using Neural.Core.Functions;
+using Neural.Core.Helpers;
 using Neural.Core.Layers;
 using Neural.Core.Neurons;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-using Neural.Core.Helpers;
 
 namespace Neural.Core
 {
@@ -13,11 +12,13 @@ namespace Neural.Core
     {
         private readonly List<Layer> _layers;
         private readonly double _learningRate;
+        private double _momentum;
 
         public NeuralNetwork(double learningRate, IFunction function, params int[] countLayerNeurons)
         {
             _layers = new List<Layer>();
             _learningRate = learningRate;
+            _momentum = 0;
             var factory = new LayerFactory();
             for (var i = 0; i < countLayerNeurons.Length; i++)
             {
@@ -28,23 +29,22 @@ namespace Neural.Core
             }
         }
 
-        public double Activate(List<double> signals)
+        public void SetMomentum(double momentum)
+        {
+            _momentum = momentum;
+        }
+
+        public List<double> Activate(List<double> signals)
         {
             SendInputSignals(signals);
             SendSignalsToAllLayers();
             return GetOutput();
         }
 
-        public void ShowAll()
+        private List<double> GetOutput()
         {
             var lastLayer = _layers.Last();
-            Console.WriteLine(string.Join("; ", lastLayer.Neurons.Select(x => x.Output)));
-        }
-
-        private double GetOutput()
-        {
-            var lastLayer = _layers.Last();
-            return lastLayer.Neurons.OrderByDescending(n => n.Output).First().Output;
+            return lastLayer.Neurons.Select(x => x.Output).ToList();
         }
 
         private void SendInputSignals(IReadOnlyList<double> signals)
@@ -72,22 +72,23 @@ namespace Neural.Core
             }
         }
 
-        public double Train(double[] expectedResults, double[,] inputs, int countEpoch)
+        public double Train(double[,] expectedResults, double[,] inputs, int countEpoch)
         {
             var error = 0.0;
             for (var i = 0; i < countEpoch; i++)
             {
-                for (var j = 0; j < expectedResults.Length; j++)
+                for (var j = 0; j < expectedResults.GetLength(0); j++)
                 {
-                    var output = expectedResults[j];
+                    var output = ArrayHelper.GetRow(expectedResults, j);
                     var input = ArrayHelper.GetRow(inputs, j);
-                    error += BackPropagation(output, input.ToList());
+                    var errorEpoch = BackPropagation(output.ToList(), input.ToList());
+                    error += errorEpoch;
                 }
             }
             var result = error / countEpoch;
             return result;
         }
-        
+
         public double[,] Scaling(double[,] inputs)
         {
             var result = new double[inputs.GetLength(0), inputs.GetLength(1)];
@@ -110,25 +111,33 @@ namespace Neural.Core
             }
         }
 
-        private double BackPropagation(double expectedValue, List<double> inputs)
+        private double BackPropagation(List<double> expectedValues, List<double> inputs)
         {
-            var outputValue = Activate(inputs);
-            var difference = outputValue - expectedValue;
-
-            HandleOutputLayer(difference);
+            var outputValues = Activate(inputs);
+            var result = HandleOutputLayer(expectedValues, outputValues);
             HandleHiddenLayers();
-
-            var result = difference * difference;
+            result = Math.Pow(result, 2);
             return result;
         }
 
-        private void HandleOutputLayer(double difference)
+        private double HandleOutputLayer(List<double> expectedValues, List<double> outputValues)
         {
-            var layer = _layers.Last();
-            foreach (var neuron in layer.Neurons)
+            var result = 0.0;
+            var lastLayer = _layers.Last();
+            var lastLayerNeurons = lastLayer.Neurons;
+            foreach (var expectedValue in expectedValues)
             {
-                neuron.Learn(difference, _learningRate);
+                var i = 0;
+                foreach (var outputValue in outputValues)
+                {
+                    var difference = expectedValue - outputValue;
+                    var neuron = lastLayerNeurons[i];
+                    neuron.Learn(difference, _learningRate, _momentum);
+                    result += difference;
+                    i++;
+                }
             }
+            return result;
         }
 
         private void HandleHiddenLayers()
@@ -144,9 +153,9 @@ namespace Neural.Core
                     var error = 0.0;
                     foreach (var neuronHigherLayer in higherLayer.Neurons)
                     {
-                        error += neuronHigherLayer.Weights[j] * neuronHigherLayer.Delta;                        
+                        error += neuronHigherLayer.Weights[j] * neuronHigherLayer.Gradient;
                     }
-                    neuron.Learn(error, _learningRate);
+                    neuron.Learn(error, _learningRate, _momentum);
                 }
             }
         }

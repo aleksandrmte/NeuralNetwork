@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neural.Core.Helpers;
 
 namespace Neural.Core.Neurons
 {
@@ -11,10 +12,13 @@ namespace Neural.Core.Neurons
 
         public Guid Id { get; set; }
         public List<double> Weights { get; set; }
+        public List<double> WeightsDelta { get; set; }
         private List<double> Inputs { get; set; }
         public double Output { get; set; }
-        public double Delta { get; set; }
+        public double Gradient { get; set; }
         public NeuronType Type { get; set; }
+        public double Bias { get; set; }
+        public double BiasDelta { get; set; }
 
         public Neuron(int inputCount, NeuronType type, IFunction function)
         {
@@ -22,20 +26,19 @@ namespace Neural.Core.Neurons
             Id = Guid.NewGuid();
             Type = type;
             Weights = new List<double>();
+            WeightsDelta = new List<double>();
             Inputs = new List<double>();
+            Bias = RandomHelper.GetRandom();
 
             InitInputRandomValue(inputCount);
         }
 
         private void InitInputRandomValue(int inputCount)
         {
-            var rnd = new Random();
             for (var i = 0; i < inputCount; i++)
             {
-                if (Type == NeuronType.Input)
-                    Weights.Add(1);
-                else
-                    Weights.Add(rnd.NextDouble());
+                WeightsDelta.Add(0);
+                Weights.Add(RandomHelper.GetRandom());
             }
         }
 
@@ -44,29 +47,30 @@ namespace Neural.Core.Neurons
             Inputs = inputs;
         }
 
-        public double CalculateOutput()
+        public void CalculateOutput()
         {
-            var sum = Inputs.Select((t, i) => t * Weights[i]).Sum();
-
-            Output = Type != NeuronType.Input ? Function.Calculate(sum) : sum;
-
-            return Output;
+            Output = Type == NeuronType.Input
+                ? Inputs.First()
+                : Function.Calculate(Inputs.Select((t, i) => t * Weights[i]).Sum() + Bias);
         }
 
-        public void Learn(double difference, double learningRate)
+        public void Learn(double difference, double learningRate, double momentum)
         {
             if (Type == NeuronType.Input)
                 return;
 
-            Delta = difference * Function.CalculateDx(Output);
+            var prevDelta = BiasDelta;
+            BiasDelta = learningRate * Gradient;
+            Bias += BiasDelta + momentum * prevDelta;
+
+            Gradient = difference * Function.CalculateDx(Output);
 
             for (var i = 0; i < Weights.Count; i++)
             {
-                var weight = Weights[i];
+                prevDelta = WeightsDelta[i];
                 var input = Inputs[i];
-
-                var newWeight = weight - input * Delta * learningRate;
-                Weights[i] = newWeight;
+                WeightsDelta[i] = input * Gradient * learningRate;
+                Weights[i] += WeightsDelta[i] + momentum * prevDelta;
             }
         }
     }
