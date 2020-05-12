@@ -141,12 +141,12 @@ namespace Neural.Core
                 for (var j = 0; j < layer.Neurons.Count; j++)
                 {
                     var neuron = layer.Neurons[j];
-
-                    foreach (var previousNeuron in higherLayer.Neurons)
+                    var error = 0.0;
+                    foreach (var neuronHigherLayer in higherLayer.Neurons)
                     {
-                        var error = previousNeuron.Weights[j] * previousNeuron.Delta;
-                        neuron.Learn(error, _learningRate);
+                        error += neuronHigherLayer.Weights[j] * neuronHigherLayer.Delta;                        
                     }
+                    neuron.Learn(error, _learningRate);
                 }
             }
         }
