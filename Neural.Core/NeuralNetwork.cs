@@ -125,17 +125,14 @@ namespace Neural.Core
             var result = 0.0;
             var lastLayer = _layers.Last();
             var lastLayerNeurons = lastLayer.Neurons;
+            var i = 0;
             foreach (var expectedValue in expectedValues)
             {
-                var i = 0;
-                foreach (var outputValue in outputValues)
-                {
-                    var difference = expectedValue - outputValue;
-                    var neuron = lastLayerNeurons[i];
-                    neuron.Learn(difference, _learningRate, _momentum);
-                    result += difference;
-                    i++;
-                }
+                var difference = expectedValue - outputValues[i];
+                var neuron = lastLayerNeurons[i];
+                neuron.Learn(difference, _learningRate, _momentum);
+                result += difference;
+                i++;
             }
             return result;
         }

@@ -9,13 +9,13 @@ namespace Neural.IO
 {
     public class FileReader
     {
-        public static (double[,], double[,]) Read(string path)
+        public static (double[,], double[,]) Read(string path, int countOutputs)
         {
             var content = File.ReadAllLines(path);
-            var rowCount = content.Length;
+            var rowCount = content.Length - 1;
             var columnCount = content[0].Split(";").Length - 1;
             var dataSets = new double[rowCount, columnCount];
-            var expectedResults = new double[rowCount, 1];
+            var expectedResults = new double[rowCount, countOutputs];
             var i = 0;
             foreach (var row in content.Skip(1))
             {
@@ -24,7 +24,13 @@ namespace Neural.IO
                 {
                     dataSets[i, j] = Convert.ToDouble(rowValues[j], CultureInfo.InvariantCulture);
                 }
-                expectedResults[i, 0] = Convert.ToDouble(rowValues[^1]);
+
+                var results = rowValues[^1].Split("-");
+                for (var k = 0; k < countOutputs; k++)
+                {
+                    expectedResults[i, k] = Convert.ToDouble(results[k]);
+                }
+                
                 i++;
             }
             return (dataSets, expectedResults);

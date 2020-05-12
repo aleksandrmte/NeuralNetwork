@@ -10,16 +10,18 @@ namespace Neural.Test
 {
     internal class Program
     {
-        private const int CountEpoch = 10000;
+        private const int CountEpoch = 25000;
 
         private static void Main(string[] args)
         {
             Console.WriteLine("App running");
+
+            const int countOutputs = 1;
             
-            var data = FileReader.Read(@"D:\heart.csv");
+            var data = FileReader.Read(@"G:\arend\heart-disease-uci\heart.csv", countOutputs);
             Console.WriteLine("Data from file loaded.");
 
-            var network = new NeuralNetwork(0.1, new SigmoidFunction(), data.Item1.GetLength(1), 10, 1);
+            var network = new NeuralNetwork(0.1, new SigmoidFunction(), data.Item1.GetLength(1), 6, countOutputs);
             Console.WriteLine("Neural network created.");
             
             var dataSets = data.Item1;
@@ -35,7 +37,7 @@ namespace Neural.Test
 
             //Compare data after training
             var results = new List<double>();
-            for (var i = 0; i < expectedResults.Length; i++)
+            for (var i = 0; i < expectedResults.GetLength(0); i++)
             {
                 var input = ArrayHelper.GetRow(dataSets, i).ToList();
                 var result = network.Activate(input);
