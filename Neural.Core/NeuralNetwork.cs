@@ -76,6 +76,7 @@ namespace Neural.Core
 
         public double Train(double[,] expectedResults, double[,] inputs, int countEpoch)
         {
+            Errors = new List<double>();
             var error = 0.0;
             for (var i = 0; i < countEpoch; i++)
             {

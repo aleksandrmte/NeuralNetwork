@@ -7,6 +7,6 @@ namespace Neural.Core.Models
     public class DataSet
     {
         public double[,] Input { get; set; }
-        public double[] Output { get; set; }
+        public double[,] Output { get; set; }
     }
 }

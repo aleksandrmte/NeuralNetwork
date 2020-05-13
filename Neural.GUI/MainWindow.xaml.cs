@@ -7,24 +7,35 @@ using Neural.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
+using Neural.Core.Helpers;
 
 namespace Neural.GUI
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private NeuralNetwork _neuralNetwork;
-        private double[,] dataSets;
-        private double[,] expectedResults;
-        private List<double> errors;
-        private SeriesCollection seriesCollection;
+        private double[,] _dataSets;
+        private double[,] _expectedResults;
+        private List<double> _errors;
+        private SeriesCollection _seriesCollection;
+        private int _epoch;
+        private Thread _thread;
+        private string _statusText = "";
+        private DispatcherTimer _dispatcherTimer;
+        private DateTime _timeStart;
+        private bool _isProcessed;
 
         public MainWindow()
         {
             InitializeComponent();
+            HideElements();
+        }
+
+        private void HideElements()
+        {
             trainButton.Visibility = Visibility.Hidden;
             label1.Visibility = Visibility.Hidden;
             label3.Visibility = Visibility.Hidden;
@@ -43,46 +54,111 @@ namespace Neural.GUI
             inputNeuronsCountTextBox.Visibility = Visibility.Visible;
             dataSetsCountTextBox.Visibility = Visibility.Visible;
             countEpochTextBox.Visibility = Visibility.Visible;
+            CreateTimer();
         }
 
-        private void button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
+            var openFileDialog = new OpenFileDialog();
+            if (openFileDialog.ShowDialog() != true)
+                return;
+
             var countOutputs = Convert.ToInt32(countOutputTextBox.Text);
             var hiddenNeuronsCount = Convert.ToInt32(hiddenLayersNeuronsCount.Text);
 
-            var openFileDialog = new OpenFileDialog();
-            if (openFileDialog.ShowDialog() == true)
-            {
-                var data = FileReader.Read(openFileDialog.FileName, countOutputs);
-                _neuralNetwork = new NeuralNetwork(0.1, new SigmoidFunction(), data.Item1.GetLength(1), hiddenNeuronsCount, countOutputs);
+            var data = FileReader.Read(openFileDialog.FileName, countOutputs);
+            _neuralNetwork = new NeuralNetwork(0.1, new SigmoidFunction(), data.Input.GetLength(1), hiddenNeuronsCount, countOutputs);
 
-                dataSetsCountTextBox.Text = data.Item1.GetLength(0).ToString();
-                inputNeuronsCountTextBox.Text = data.Item1.GetLength(1).ToString();
+            dataSetsCountTextBox.Text = data.Input.GetLength(0).ToString();
+            inputNeuronsCountTextBox.Text = data.Input.GetLength(1).ToString();
 
-                dataSets = data.Item1;
-                expectedResults = data.Item2;
-                ShowElements();
-            }
+            _dataSets = data.Input;
+            Scaling();
 
+            _expectedResults = data.Output;
+            ShowElements();
         }
 
-        private void trainButton_Click(object sender, RoutedEventArgs e)
+        private void CreateTimer()
         {
-            var epoch = Convert.ToInt32(countEpochTextBox.Text);
-            _neuralNetwork.Train(expectedResults, dataSets, epoch);
-            errors = _neuralNetwork.Errors;
-            MessageBox.Show("Ready");
+            _dispatcherTimer = new DispatcherTimer();
+            _dispatcherTimer.Tick += DispatcherTimer_Tick;
+            _dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 200);
+        }
 
-            seriesCollection = new SeriesCollection
+        private void DispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            var time = _isProcessed? " (" + (DateTime.Now - _timeStart).Seconds + ")": "";
+            lblStatus.Text = _statusText + time;
+        }
+
+        private void TrainButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_dispatcherTimer.IsEnabled)
+                _dispatcherTimer.Start();
+            _epoch = Convert.ToInt32(countEpochTextBox.Text);
+            _statusText = "Computing...";
+            _timeStart = DateTime.Now;
+            _thread = new Thread(Training);
+            _thread.Start();
+        }
+
+        private void Training()
+        {
+            _isProcessed = true;
+            _neuralNetwork.Train(_expectedResults, _dataSets, _epoch);
+            _errors = _neuralNetwork.Errors;
+            _statusText = "Computed. Drawing chart...";
+            Thread.Sleep(500);
+            DrawChart();
+        }
+
+        private void Scaling()
+        {
+            if (ArrayHelper.Each(_dataSets).Any(x => x > 1 || x < 0))
             {
-                new LineSeries
-                {
-                    Values = new ChartValues<double>(errors)
-                },
+                _dataSets = _neuralNetwork.Scaling(_dataSets);
+            }
+        }
 
-            };
-            chart.Series = seriesCollection;
-            chart.Update(false, true);
+        private void DrawChart()
+        {
+            var groupedData = GroupData(_errors);
+            _statusText = "Finished";
+            _isProcessed = false;
+
+            Dispatcher.Invoke(() =>
+            {
+                _seriesCollection = new SeriesCollection
+                {
+                    new LineSeries
+                    {
+                        Values = new ChartValues<double>(groupedData)
+                    }
+                };
+                chart.Series = _seriesCollection;
+                chart.Update(true, true);
+            });
+        }
+
+        private static IEnumerable<double> GroupData(IReadOnlyCollection<double> data)
+        {
+            const decimal countPoints = 1000;
+
+            if (data.Count <= countPoints)
+                return data;
+
+            var groupedData = new List<double>();
+
+            var count = (int)Math.Ceiling(data.Count / countPoints);
+
+            for (var i = 0; i < countPoints; i++)
+            {
+                var point = data.Skip(i * count).Take(count).Average();
+                groupedData.Add(point);
+            }
+
+            return groupedData;
         }
     }
 }

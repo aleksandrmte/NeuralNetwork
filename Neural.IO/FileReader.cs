@@ -4,12 +4,13 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Neural.Core.Models;
 
 namespace Neural.IO
 {
     public class FileReader
     {
-        public static (double[,], double[,]) Read(string path, int countOutputs)
+        public static DataSet Read(string path, int countOutputs)
         {
             var content = File.ReadAllLines(path);
             var rowCount = content.Length - 1;
@@ -33,7 +34,14 @@ namespace Neural.IO
                 
                 i++;
             }
-            return (dataSets, expectedResults);
+
+            var dataSet = new DataSet
+            {
+                Input = dataSets,
+                Output = expectedResults
+            };
+
+            return dataSet;
         }
     }
 }

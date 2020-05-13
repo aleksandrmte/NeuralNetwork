@@ -20,5 +20,10 @@ namespace Neural.Core.Helpers
                 .Select(x => matrix[rowNumber, x])
                 .ToArray();
         }
+
+        public static IEnumerable<T> Each<T>(T[,] source)
+        {
+            return source.Cast<T>();
+        }
     }
 }
