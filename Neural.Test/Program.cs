@@ -11,15 +11,15 @@ namespace Neural.Test
 {
     internal class Program
     {
-        private const int CountEpoch = 10000;
+        private const int CountEpoch = 20000;
 
         private static void Main(string[] args)
         {
             Console.WriteLine("App running");
 
-            const int countOutputs = 2;
+            const int countOutputs = 1;
 
-            var data = FileReader.Read(@"G:\arend\heart-disease-uci\rest.csv", countOutputs);
+            var data = FileReader.Read(@"G:\arend\heart-disease-uci\heart.csv", countOutputs);
             Console.WriteLine("Data from file loaded.");
 
             var network = new NeuralNetwork(0.1, new SigmoidFunction(), data.Item1.GetLength(1), 3, countOutputs);
