@@ -20,17 +20,7 @@ namespace Neural.GUI
         private double[,] dataSets;
         private double[,] expectedResults;
         private List<double> errors;
-        private SeriesCollection seriesCollection = new SeriesCollection
-{
-    new LineSeries
-    {
-        Values = new ChartValues<double> { 3, 5, 7, 4 }
-    },
-    new ColumnSeries
-    {
-        Values = new ChartValues<decimal> { 5, 6, 2, 7 }
-    }
-};
+        private SeriesCollection seriesCollection;
 
         public MainWindow()
         {
