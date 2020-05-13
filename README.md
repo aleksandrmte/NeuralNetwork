@@ -23,7 +23,9 @@ expectedResults[2, 0] = 0;
 expectedResults[3, 0] = 1;
 
 var countEpoch = 5000;
-var network = new NeuralNetwork(0.7, new SigmoidFunction(), 2, 2, 1);
+var learningRate = 0.7;
+var layersNeuronsCount = new[] { 2, 2, 1 };
+var network = new NeuralNetwork(learningRate, new SigmoidFunction(), layersNeuronsCount);
 network.Train(expectedResults, dataSets, countEpoch);
 ```
 
